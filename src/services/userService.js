@@ -1,6 +1,9 @@
 import { db as drizzleDb } from '../database/db.js';
 import { eq } from 'drizzle-orm';
 import { users } from '../database/schema.js';
+import bcrypt from 'bcryptjs';
+
+const SALT_ROUNDS = 10;
 
 export const getDataAllUsers = async () => {
     try {
@@ -34,9 +37,23 @@ export const getDataUserByUid = async (uid) => {
 
 export const createDataUser = async (userData) => {
     try {
+        // 1. Cek apakah UID (plaintext) sudah ada di DB
+        const allUsers = await getDataAllUsers();
+        for (const u of allUsers) {
+            const isDuplicate = await bcrypt.compare(userData.rfid_uid, u.rfid_uid);
+            if (isDuplicate) {
+                const error = new Error("UID_ALREADY_EXISTS");
+                error.code = "DUPLICATE_UID";
+                throw error;
+            }
+        }
+
+        // 2. Jika aman, enkripsi dan simpan
+        const hashedUid = await bcrypt.hash(userData.rfid_uid, SALT_ROUNDS);
+
         const result = await drizzleDb.insert(users).values({
             name: userData.name,
-            rfid_uid: userData.rfid_uid,
+            rfid_uid: hashedUid,
             role: userData.role,
             schedule_start: userData.schedule_start,
             schedule_end: userData.schedule_end,
@@ -44,16 +61,24 @@ export const createDataUser = async (userData) => {
         }).returning();
         return result[0];
     } catch (error) {
-        console.error("Failed to create user", error);
+        if (error.code !== "DUPLICATE_UID") {
+           console.error("Failed to create user", error);
+        }
         throw error;
     }
 }
 
 export const updateDataUser = async (id, updateData) => {
     try {
+        let hashedUid = updateData.rfid_uid;
+        if (hashedUid) {
+            hashedUid = await bcrypt.hash(hashedUid, SALT_ROUNDS);
+        }
+
         const result = await drizzleDb.update(users)
             .set({
                 ...updateData,
+                ...(hashedUid && { rfid_uid: hashedUid }),
                 updated_at: new Date()
             })
             .where(eq(users.id, parseInt(id)))

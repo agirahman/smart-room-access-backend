@@ -39,6 +39,9 @@ export const createUser = async (req, res) => {
         const newUser = await createDataUser(req.body);
         return sendResponse(res, 201, newUser, "User created successfully");
     } catch (error) {
+        if (error.code === "DUPLICATE_UID") {
+            return sendError(res, 409, "RFID UID is already registered to another user");
+        }
         return sendError(res, 500, "Internal server error");
     }
 };

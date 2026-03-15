@@ -1,11 +1,23 @@
 import { db } from '../database/db.js';
 import { accessLogs } from '../database/schema.js';
 import { sendNotification } from './notificationService.js';
-import { getDataUserByUid } from './userService.js';
+import { getDataAllUsers } from './userService.js';
+import bcrypt from 'bcryptjs';
 
 export const validateAccess = async (uid, room) => {
-    // 1. Cek User Terdaftar
-    const user = await getDataUserByUid(uid);
+    // 1. Cek User Terdaftar (Menggunakan Bcrypt)
+    const allUsers = await getDataAllUsers();
+    let user = null;
+
+    // Cari user yang hash UIDs-nya cocok dengan UID asli yang masuk
+    for (const u of allUsers) {
+        const isMatch = await bcrypt.compare(uid, u.rfid_uid);
+        if (isMatch) {
+            user = u;
+            break;
+        }
+    }
+
     if (!user) {
         const msg = 'RFID tidak terdaftar di sistem';
         await logAccess(null, uid, 'denied', room, msg);
