@@ -24,7 +24,7 @@ export const uploadToGcs = async (buffer, uid) => {
 
     await file.save(buffer, {
         metadata: { contentType: 'image/jpeg' },
-        public: true,   // Bucket is already public, make object public too
+        // public: true tidak diperlukan — bucket sudah uniform public access
     });
 
     const publicUrl = `https://storage.googleapis.com/${GCP_BUCKET_NAME}/${filename}`;

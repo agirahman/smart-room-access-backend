@@ -15,7 +15,7 @@ export const sendNotification = async (user, room, status, accessTypeMessage = "
         return;
     }
 
-    const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
 
     const message = `
 Access Notification

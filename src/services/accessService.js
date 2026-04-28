@@ -42,7 +42,9 @@ export const validateAccess = async (uid, room, photoBuffer = null) => {
         return { status: 'denied', message: msg };
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    // Gunakan waktu WIB (UTC+7) — Cloud Run berjalan di UTC
+    const nowWIB = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const today = nowWIB.toISOString().split('T')[0];
 
     // 2. Cek Masa Berlaku Kartu
     if (user.valid_until && today > user.valid_until) {
@@ -52,9 +54,8 @@ export const validateAccess = async (uid, room, photoBuffer = null) => {
         return { status: 'denied', message: msg };
     }
 
-    // 3. Cek Jadwal Akses
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
+    // 3. Cek Jadwal Akses (pakai WIB UTC+7)
+    const currentTime = nowWIB.toISOString().slice(11, 16); // HH:MM in WIB
 
     if (currentTime < user.schedule_start || currentTime > user.schedule_end) {
         const msg = 'Akses ditolak di luar jadwal operasional';
